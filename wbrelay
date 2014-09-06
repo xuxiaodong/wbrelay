@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# name     : wbrelay, weibo relay
+# author   : Xu Xiaodong <xxdlhy@gmail.com>
+# created  : 2014 Sep 05
+# modified : 2014 Sep 06
+#
+
+'''
+wbrelay - weibo relay
+
+Usage:
+    wbrelay <status> [<picture>]
+
+Example:
+    wbrelay 'Hello wbrelay!'
+    wbrelay 'Hello wbrelay!' /path/to/picture.png
+'''
+
+import os
+import os.path
+import sys
+import ConfigParser
+
+from snspy import APIClient, SinaWeiboMixin
+
+
+config = ConfigParser.RawConfigParser()
+config.read(os.environ['HOME'] + '/.wbrelayrc')
+
+APP_KEY = config.get('wbrelay', 'key')
+APP_SECRET = config.get('wbrelay', 'secret')
+CALLBACK_URL = 'http://i.linuxtoy.org/wbrelay'
+TOKEN_FILE = 'access.token'
+
+
+def save_token():
+    client = APIClient(SinaWeiboMixin, 
+            app_key=APP_KEY, 
+            app_secret=APP_SECRET, 
+            redirect_uri=CALLBACK_URL)
+
+    auth_url = client.get_authorize_url()
+    print('Please open %s, then type code: ' % auth_url)
+
+    code = input()
+
+    req = client.request_access_token(code)
+    access_token = req.access_token
+    expires = req.expires
+
+    file = open(TOKEN_FILE, 'w')
+    file.write(access_token + ' ' + str(expires))
+    file.close()
+
+
+def post_status(status, pic=None):
+    if not os.path.isfile(TOKEN_FILE):
+        save_token()
+
+    file = open(TOKEN_FILE)
+    line = file.read().strip()
+    access_token, expires = line.split()
+
+    client = APIClient(SinaWeiboMixin, 
+            app_key=APP_KEY, 
+            app_secret=APP_SECRET,
+            redirect_uri=CALLBACK_URL, 
+            access_token=access_token, 
+            expires=expires)
+
+    if pic:
+        pic_file = open(pic, 'rb')
+        rc = client.statuses.upload.post(status=status, pic=pic_file)
+    else:
+        rc = client.statuses.update.post(status=status)
+
+    return rc
+
+
+if __name__ == '__main__':
+    arg = len(sys.argv) - 1
+    if arg == 1:
+        status = sys.argv[1]
+        post_status(status)
+    elif arg == 2:
+        status = sys.argv[1]
+        pic = sys.argv[2]
+        post_status(status, pic)
+    else:
+        print(__doc__)
