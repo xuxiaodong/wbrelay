@@ -4,7 +4,7 @@
 # name     : wbrelay, weibo relay
 # author   : Xu Xiaodong <xxdlhy@gmail.com>
 # created  : 2014 Sep 05
-# modified : 2014 Sep 06
+# modified : 2014 Sep 08
 #
 
 '''
@@ -21,6 +21,7 @@ Example:
 import os
 import os.path
 import sys
+import time
 import ConfigParser
 
 from snspy import APIClient, SinaWeiboMixin
@@ -62,6 +63,12 @@ def post_status(status, pic=None):
     file = open(TOKEN_FILE)
     line = file.read().strip()
     access_token, expires = line.split()
+
+    now = time.time()
+    if float(expires) < now:
+        print('Expired token :(')
+        save_token()
+        sys.exit(1)
 
     client = APIClient(SinaWeiboMixin, 
             app_key=APP_KEY, 
