@@ -4,7 +4,7 @@
 # name     : wbrelay, weibo relay
 # author   : Xu Xiaodong <xxdlhy@gmail.com>
 # created  : 2014 Sep 05
-# modified : 2014 Sep 08
+# modified : 2014 Sep 09
 #
 
 '''
@@ -28,12 +28,13 @@ from snspy import APIClient, SinaWeiboMixin
 
 
 config = ConfigParser.RawConfigParser()
-config.read(os.environ['HOME'] + '/.wbrelayrc')
+home = os.environ['HOME']
+config.read(home + '/.wbrelayrc')
 
-APP_KEY = config.get('wbrelay', 'key')
-APP_SECRET = config.get('wbrelay', 'secret')
-CALLBACK_URL = 'http://i.linuxtoy.org/wbrelay'
-TOKEN_FILE = 'access.token'
+APP_KEY = config.get('wbrelay', 'app_key')
+APP_SECRET = config.get('wbrelay', 'app_secret')
+CALLBACK_URL = config.get('wbrelay', 'callback_url')
+TOKEN_FILE = home + '/.wbrelayat'
 
 
 def save_token():
@@ -51,17 +52,17 @@ def save_token():
     access_token = req.access_token
     expires = req.expires
 
-    file = open(TOKEN_FILE, 'w')
-    file.write(access_token + ' ' + str(expires))
-    file.close()
+    token = open(TOKEN_FILE, 'w')
+    token.write(access_token + ' ' + str(expires))
+    token.close()
 
 
 def post_status(status, pic=None):
     if not os.path.isfile(TOKEN_FILE):
         save_token()
 
-    file = open(TOKEN_FILE)
-    line = file.read().strip()
+    token = open(TOKEN_FILE)
+    line = token.read().strip()
     access_token, expires = line.split()
 
     now = time.time()
